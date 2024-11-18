@@ -1,0 +1,6 @@
+neo4j
+pyspark
+pandas
+py2neo
+psycopg2-binary
+python-dotenv

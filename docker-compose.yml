@@ -1,0 +1,38 @@
+version: '3.8'
+services:
+  neo4j:
+    image: neo4j:5.25-community-ubi9
+    ports:
+      - 7888:7474  
+      - 7999:7687  
+    restart: unless-stopped
+    environment:
+      - NEO4J_AUTH=${NEO4J_USER}/${NEO4J_PASSWORD}  
+    volumes:
+      - ./db_neo4j/data:/data
+      - ./db_neo4j/conf:/conf
+      - ./db_neo4j/logs:/logs
+      - ./db_neo4j/plugins:/plugins
+      - ./db_neo4j/import:/import
+
+  postgres:
+    image: postgres:15.3
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - ./db_postgres/data:/var/lib/postgresql/data
+
+  pgadmin4:
+    image: elestio/pgadmin:latest
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
+    ports:
+      - "80:80"
+    depends_on:
+      - postgres
