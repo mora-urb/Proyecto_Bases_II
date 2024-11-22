@@ -19,7 +19,7 @@ services:
     image: postgres:15.3
     restart: always
     ports:
-      - "5433:5432"  
+      - "5433:5432"
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -33,11 +33,16 @@ services:
       - ./db_postgres/data:/var/lib/postgresql/data
 
   pgadmin4:
-    image: elestio/pgadmin:latest
+    image: dpage/pgadmin4  
     environment:
       - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
+      - PGADMIN_CONFIG_SERVER_MODE=False
+      - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False
     ports:
       - "80:80"
     depends_on:
       - postgres
+    volumes:
+      - ./pgadmin-data:/var/lib/pgadmin
+    restart: unless-stopped
