@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
+os.environ['PYSPARK_PYTHON'] = os.path.join(os.environ['CONDA_PREFIX'], 'python.exe')
+os.environ['PYSPARK_DRIVER_PYTHON'] = os.path.join(os.environ['CONDA_PREFIX'], 'python.exe')
 
 neo4j_url = os.getenv('NEO4J_URL')
 neo4j_user = os.getenv('NEO4J_USER')
@@ -46,7 +48,9 @@ df = pd.DataFrame(data)
 # Crear la sesión de Spark
 spark = SparkSession.builder \
     .appName("Neo4J_Spark_Project") \
-    .config("spark.master", "local[*]") \
+    .config("spark.driver.host", "localhost") \
+    .config("spark.sql.shuffle.partitions", "10") \
+    .master("local[*]") \
     .getOrCreate()
 
 # Convertir el DataFrame de Pandas a un DataFrame de PySpark
@@ -58,8 +62,8 @@ spark_df.show()
 
 # 1. **Gastado por Cliente** (sumar el Standard_Cost por cada cliente)
 total_spent_per_customer = spark_df.groupBy("Customer_ID") \
-    .sum("Standard_Cost") \
-    .withColumnRenamed("sum(Standard_Cost)", "Total_Spent")
+    .agg(F.sum(F.when(F.col("Standard_Cost").isNotNull(), F.col("Standard_Cost"))).alias("Total_Spent")) \
+    .orderBy("Total_Spent", ascending=False)
 
 print("\nGastado por Cliente:")
 total_spent_per_customer.show()
@@ -74,10 +78,11 @@ products_most_bought.show()
 
 # 3. **Promedio por Cliente** (calcular el gasto promedio por cliente)
 average_spend_per_customer = spark_df.groupBy("Customer_ID") \
-    .agg({'Standard_Cost': 'sum', 'Standard_Cost': 'count'}) \
-    .withColumnRenamed('sum(Standard_Cost)', 'Total_Spent') \
-    .withColumnRenamed('count(Customer_ID)', 'Transaction_Count') \
-    .withColumn('Average_Spend', spark_df['Total_Spent'] / spark_df['Transaction_Count'])
+    .agg(
+        F.avg(F.when(F.col("Standard_Cost").isNotNull(), F.col("Standard_Cost"))).alias("Average_Spend"),
+        F.count("*").alias("Transaction_Count")
+    ) \
+    .orderBy("Average_Spend", ascending=False)
 
 print("\nPromedio por Cliente:")
 average_spend_per_customer.show()
